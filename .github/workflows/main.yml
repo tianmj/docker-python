@@ -1,0 +1,37 @@
+name: Docker image
+
+on:
+  push:
+    tags:
+      - '!*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python_version: [3.7.4-buster, 3.7.4-slim-buster, 3.7.4-stretch, 3.7.4-slim-stretch]
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Build
+      run: make build
+      env:
+        PYTHON_VERSION: ${{ matrix.python_version }}
+        DOCKER_IMAGE_TAG: ${{ matrix.python_version }}
+        DOCKER_REGISTRY_URL: docker.pkg.github.com/${GITHUB_REPOSITORY}
+
+    - name: Login
+      run: echo ${REGISTRY_PASSWORD} | docker login -u ${REGISTRY_USERNAME} --password-stdin docker.pkg.github.com
+      env:
+        REGISTRY_USERNAME: ${{ secrets.GITHUB_REGISTRY_USERNAME }}
+        REGISTRY_PASSWORD: ${{ secrets.GITHUB_REGISTRY_TOKEN }}
+
+    - name: Push
+      run: make push
+      env:
+        PYTHON_VERSION: ${{ matrix.python_version }}
+        DOCKER_IMAGE_TAG: ${{ matrix.python_version }}
+        DOCKER_REGISTRY_URL: docker.pkg.github.com/${GITHUB_REPOSITORY}
